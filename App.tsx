@@ -1,188 +1,98 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, ShieldCheck, RefreshCw, Eraser } from 'lucide-react';
-import { Message, Role } from './types';
-import { sendMessageStream, resetChatSession } from './services/geminiService';
-import ChatMessage from './components/ChatMessage';
-import QuickPrompts from './components/QuickPrompts';
+import React, { useState, useRef, useEffect } from "react";
+import { Send, ShieldCheck, RefreshCw } from "lucide-react";
+import { Message, Role } from "./types";
+import { sendMessageStream, resetChatSession } from "./services/geminiService";
+import ChatMessage from "./components/ChatMessage";
+import QuickPrompts from "./components/QuickPrompts";
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: Role.MODEL,
-      text: 'Xin chào! Tớ là Cố vấn An toàn Số. Tớ ở đây để giúp cậu giải đáp các thắc mắc về an toàn trực tuyến, bảo mật thông tin và cách ứng xử trên mạng xã hội. Cậu đang gặp vấn đề gì thế?',
-      timestamp: new Date()
-    }
+    { id: "welcome", role: Role.MODEL, text: "Xin chào! Tớ là Cố vấn An toàn Số. Bạn cần tư vấn gì?", timestamp: new Date() }
   ]);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  useEffect(() => { scrollToBottom(); }, [messages]);
 
   const handleSendMessage = async (text: string = inputValue) => {
-    const trimmedText = text.trim();
-    if (!trimmedText || isLoading) return;
+    const trimmed = text.trim();
+    if (!trimmed || isLoading) return;
 
-    // Add user message
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: Role.USER,
-      text: trimmedText,
-      timestamp: new Date()
-    };
-    
+    const userMsg: Message = { id: Date.now().toString(), role: Role.USER, text: trimmed, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
-    setInputValue('');
+    setInputValue("");
     setIsLoading(true);
 
     try {
-      // Add placeholder for AI response
-      const aiMsgId = (Date.now() + 1).toString();
-      setMessages(prev => [...prev, {
-        id: aiMsgId,
-        role: Role.MODEL,
-        text: '',
-        timestamp: new Date()
-      }]);
+      const aiId = (Date.now() + 1).toString();
+      setMessages(prev => [...prev, { id: aiId, role: Role.MODEL, text: "", timestamp: new Date() }]);
 
-      let fullResponse = "";
-      const stream = sendMessageStream(trimmedText);
-
+      let full = "";
+      const stream = sendMessageStream(trimmed);
       for await (const chunk of stream) {
-        fullResponse += chunk;
-        setMessages(prev => prev.map(msg => 
-          msg.id === aiMsgId ? { ...msg, text: fullResponse } : msg
-        ));
+        full = chunk;
+        setMessages(prev => prev.map(m => m.id === aiId ? { ...m, text: full } : m));
       }
-    } catch (error) {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 2).toString(),
-        role: Role.MODEL,
-        text: "Xin lỗi, tớ đang gặp chút trục trặc khi kết nối. Cậu thử lại sau một chút nhé!",
-        timestamp: new Date(),
-        isError: true
-      }]);
+    } catch {
+      setMessages(prev => [...prev, { id: (Date.now() + 2).toString(), role: Role.MODEL, text: "Lỗi khi kết nối AI.", timestamp: new Date(), isError: true }]);
     } finally {
       setIsLoading(false);
-      // Focus back on input for desktop users mainly
-      if (window.matchMedia("(min-width: 768px)").matches) {
-          inputRef.current?.focus();
-      }
     }
   };
 
   const handleReset = () => {
-    if (confirm("Cậu có chắc muốn xóa cuộc trò chuyện và bắt đầu lại không?")) {
+    if (confirm("Bạn muốn xóa cuộc trò chuyện và bắt đầu lại?")) {
       resetChatSession();
-      setMessages([{
-        id: Date.now().toString(),
-        role: Role.MODEL,
-        text: 'Chúng mình đã bắt đầu lại. Cậu cần tư vấn về điều gì mới không?',
-        timestamp: new Date()
-      }]);
+      setMessages([{ id: Date.now().toString(), role: Role.MODEL, text: "Đã bắt đầu lại!", timestamp: new Date() }]);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 relative">
+    <div className="flex flex-col h-full bg-slate-50">
       {/* Header */}
-      <header className="flex-none bg-white border-b border-slate-200 px-4 py-3 shadow-sm z-10">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-              <ShieldCheck size={24} />
-            </div>
-            <div>
-              <h1 className="font-bold text-slate-800 text-lg leading-tight">Cố vấn An toàn Số</h1>
-              <p className="text-xs text-slate-500">Người bạn đồng hành tin cậy</p>
-            </div>
+      <header className="flex-none bg-white p-3 border-b">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={24} />
+            <h1>Cố vấn An toàn Số</h1>
           </div>
-          <button 
-            onClick={handleReset}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-            title="Bắt đầu cuộc trò chuyện mới"
-          >
-            <RefreshCw size={20} />
-          </button>
+          <button onClick={handleReset}><RefreshCw size={20} /></button>
         </div>
       </header>
 
       {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth">
-        <div className="max-w-3xl mx-auto">
-          {messages.map((msg) => (
-            <ChatMessage key={msg.id} message={msg} />
-          ))}
-          
-          {isLoading && (
-            <div className="flex justify-start mb-6">
-              <div className="flex items-center gap-2 text-slate-400 bg-white px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-100 shadow-sm">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-              </div>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
+      <main className="flex-1 overflow-y-auto p-4">
+        {messages.map(m => <ChatMessage key={m.id} message={m} />)}
+        {isLoading && <div>AI đang trả lời...</div>}
+        <div ref={messagesEndRef} />
       </main>
 
-      {/* Quick Prompts - Show only if few messages or last message was from AI and not loading */}
-      {!isLoading && messages.length < 4 && messages[messages.length - 1].role === Role.MODEL && (
-         <div className="flex-none bg-slate-50 pt-2">
-            <QuickPrompts onSelect={handleSendMessage} disabled={isLoading} />
-         </div>
+      {/* Quick Prompts */}
+      {!isLoading && messages.length < 4 && messages[messages.length-1].role === Role.MODEL && (
+        <QuickPrompts onSelect={handleSendMessage} disabled={isLoading} />
       )}
 
-      {/* Input Area */}
-      <footer className="flex-none bg-white border-t border-slate-200 px-4 py-4 z-10">
-        <div className="max-w-3xl mx-auto flex items-end gap-3">
-          <div className="flex-1 relative">
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Nhập câu hỏi của cậu tại đây..."
-              disabled={isLoading}
-              className="w-full pl-4 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-slate-800 placeholder-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
-            />
-          </div>
-          <button
-            onClick={() => handleSendMessage()}
-            disabled={!inputValue.trim() || isLoading}
-            className="flex-none w-12 h-12 flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl shadow-sm transition-all duration-200 transform hover:scale-105 active:scale-95"
-          >
-            <Send size={20} className={isLoading ? 'opacity-0' : 'opacity-100'} />
-            {isLoading && (
-               <div className="absolute inset-0 flex items-center justify-center">
-                  <RefreshCw size={20} className="animate-spin" />
-               </div>
-            )}
-          </button>
-        </div>
-        <div className="max-w-3xl mx-auto mt-2 text-center">
-          <p className="text-[10px] text-slate-400">
-            * Cố vấn An toàn Số là AI và có thể mắc lỗi. Với các tình huống khẩn cấp, hãy liên hệ người lớn hoặc tổng đài 111.
-          </p>
-        </div>
+      {/* Input */}
+      <footer className="p-4 bg-white border-t flex gap-2">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={e => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Nhập câu hỏi..."
+          className="flex-1 border p-2 rounded"
+          disabled={isLoading}
+        />
+        <button onClick={() => handleSendMessage()} disabled={!inputValue.trim() || isLoading} className="p-2 bg-emerald-600 text-white rounded">
+          <Send size={20} />
+        </button>
       </footer>
     </div>
   );
