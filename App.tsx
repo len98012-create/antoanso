@@ -11,6 +11,11 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Biến lưu touch
+  const touchStartY = useRef<number>(0);
+  const touchCurrentY = useRef<number>(0);
 
   // Load messages từ localStorage khi App load
   useEffect(() => {
@@ -18,7 +23,6 @@ const App: React.FC = () => {
     if (savedMessages) {
       setMessages(JSON.parse(savedMessages));
     } else {
-      // Nếu chưa có tin nhắn, thêm welcome message
       setMessages([
         {
           id: 'welcome',
@@ -33,11 +37,31 @@ const App: React.FC = () => {
   // Lưu messages vào localStorage mỗi khi thay đổi
   useEffect(() => {
     localStorage.setItem('chatMessages', JSON.stringify(messages));
-    scrollToBottom();
+    scrollToBottomIfNeeded();
   }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottomIfNeeded = () => {
+    const chatContainer = chatContainerRef.current;
+    if (!chatContainer) return;
+    const atBottom =
+      chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50; // margin
+    if (atBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Touch event handlers cho vuốt lên/xuống
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchCurrentY.current = e.touches[0].clientY;
+    const deltaY = touchStartY.current - touchCurrentY.current;
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollBy({ top: deltaY, behavior: 'auto' });
+    }
+    touchStartY.current = touchCurrentY.current;
   };
 
   const handleSendMessage = async (text: string = inputValue) => {
@@ -139,7 +163,12 @@ const App: React.FC = () => {
       </header>
 
       {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth">
+      <main
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+      >
         <div className="max-w-3xl mx-auto">
           {messages.map(msg => (
             <ChatMessage key={msg.id} message={msg} />
