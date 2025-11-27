@@ -35,16 +35,8 @@ const App: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Scroll xuống cuối nhưng giữ khi user vuốt lên
   const scrollToBottom = () => {
-    const container = messagesEndRef.current?.parentElement;
-    if (!container) return;
-
-    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-
-    if (isNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleSendMessage = async (text: string = inputValue) => {
