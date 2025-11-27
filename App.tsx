@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, ShieldCheck, RefreshCw } from 'lucide-react';
 import { Message, Role } from './types';
@@ -6,63 +7,26 @@ import ChatMessage from './components/ChatMessage';
 import QuickPrompts from './components/QuickPrompts';
 
 const App: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'welcome',
+      role: Role.MODEL,
+      text: 'Xin chào! Tớ là Cố vấn An toàn Số. Tớ ở đây để giúp cậu giải đáp các thắc mắc về an toàn trực tuyến, bảo mật thông tin và cách ứng xử trên mạng xã hội. Cậu đang gặp vấn đề gì thế?',
+      timestamp: new Date(),
+    },
+  ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Biến lưu touch
-  const touchStartY = useRef<number>(0);
-  const touchCurrentY = useRef<number>(0);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-  // Load messages từ localStorage khi App load
   useEffect(() => {
-    const savedMessages = localStorage.getItem('chatMessages');
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
-    } else {
-      setMessages([
-        {
-          id: 'welcome',
-          role: Role.MODEL,
-          text: 'Xin chào! Tớ là Cố vấn An toàn Số. Tớ ở đây để giúp cậu giải đáp các thắc mắc về an toàn trực tuyến, bảo mật thông tin và cách ứng xử trên mạng xã hội. Cậu đang gặp vấn đề gì thế?',
-          timestamp: new Date(),
-        },
-      ]);
-    }
-  }, []);
-
-  // Lưu messages vào localStorage mỗi khi thay đổi
-  useEffect(() => {
-    localStorage.setItem('chatMessages', JSON.stringify(messages));
-    scrollToBottomIfNeeded();
+    scrollToBottom();
   }, [messages]);
-
-  const scrollToBottomIfNeeded = () => {
-    const chatContainer = chatContainerRef.current;
-    if (!chatContainer) return;
-    const atBottom =
-      chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50; // margin
-    if (atBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  // Touch event handlers cho vuốt lên/xuống
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchCurrentY.current = e.touches[0].clientY;
-    const deltaY = touchStartY.current - touchCurrentY.current;
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollBy({ top: deltaY, behavior: 'auto' });
-    }
-    touchStartY.current = touchCurrentY.current;
-  };
 
   const handleSendMessage = async (text: string = inputValue) => {
     const trimmedText = text.trim();
@@ -88,6 +52,7 @@ const App: React.FC = () => {
       let fullResponse = '';
       const stream = sendMessageStream(trimmedText);
 
+      // For-await-of safe with try/catch
       for await (const chunk of stream) {
         fullResponse += chunk;
         setMessages(prev =>
@@ -119,13 +84,14 @@ const App: React.FC = () => {
   const handleReset = () => {
     if (confirm('Cậu có chắc muốn xóa cuộc trò chuyện và bắt đầu lại không?')) {
       resetChatSession();
-      const newMsg: Message = {
-        id: Date.now().toString(),
-        role: Role.MODEL,
-        text: 'Chúng mình đã bắt đầu lại. Cậu cần tư vấn về điều gì mới không?',
-        timestamp: new Date(),
-      };
-      setMessages([newMsg]);
+      setMessages([
+        {
+          id: Date.now().toString(),
+          role: Role.MODEL,
+          text: 'Chúng mình đã bắt đầu lại. Cậu cần tư vấn về điều gì mới không?',
+          timestamp: new Date(),
+        },
+      ]);
     }
   };
 
@@ -163,12 +129,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Chat Area */}
-      <main
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-      >
+      <main className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth">
         <div className="max-w-3xl mx-auto">
           {messages.map(msg => (
             <ChatMessage key={msg.id} message={msg} />
@@ -177,9 +138,18 @@ const App: React.FC = () => {
           {isLoading && (
             <div className="flex justify-start mb-6">
               <div className="flex items-center gap-2 text-slate-400 bg-white px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-100 shadow-sm">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div
+                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '0ms' }}
+                />
+                <div
+                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '150ms' }}
+                />
+                <div
+                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '300ms' }}
+                />
               </div>
             </div>
           )}
