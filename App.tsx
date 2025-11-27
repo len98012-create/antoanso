@@ -6,26 +6,39 @@ import ChatMessage from './components/ChatMessage';
 import QuickPrompts from './components/QuickPrompts';
 
 const App: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: Role.MODEL,
-      text: 'Xin chào! Tớ là Cố vấn An toàn Số. Tớ ở đây để giúp cậu giải đáp các thắc mắc về an toàn trực tuyến, bảo mật thông tin và cách ứng xử trên mạng xã hội. Cậu đang gặp vấn đề gì thế?',
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Load messages từ localStorage khi App load
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('chatMessages');
+    if (savedMessages) {
+      setMessages(JSON.parse(savedMessages));
+    } else {
+      // Nếu chưa có tin nhắn, thêm welcome message
+      setMessages([
+        {
+          id: 'welcome',
+          role: Role.MODEL,
+          text: 'Xin chào! Tớ là Cố vấn An toàn Số. Tớ ở đây để giúp cậu giải đáp các thắc mắc về an toàn trực tuyến, bảo mật thông tin và cách ứng xử trên mạng xã hội. Cậu đang gặp vấn đề gì thế?',
+          timestamp: new Date(),
+        },
+      ]);
+    }
+  }, []);
+
+  // Lưu messages vào localStorage mỗi khi thay đổi
+  useEffect(() => {
+    localStorage.setItem('chatMessages', JSON.stringify(messages));
+    scrollToBottom();
+  }, [messages]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   const handleSendMessage = async (text: string = inputValue) => {
     const trimmedText = text.trim();
@@ -51,7 +64,6 @@ const App: React.FC = () => {
       let fullResponse = '';
       const stream = sendMessageStream(trimmedText);
 
-      // For-await-of safe with try/catch
       for await (const chunk of stream) {
         fullResponse += chunk;
         setMessages(prev =>
@@ -83,14 +95,13 @@ const App: React.FC = () => {
   const handleReset = () => {
     if (confirm('Cậu có chắc muốn xóa cuộc trò chuyện và bắt đầu lại không?')) {
       resetChatSession();
-      setMessages([
-        {
-          id: Date.now().toString(),
-          role: Role.MODEL,
-          text: 'Chúng mình đã bắt đầu lại. Cậu cần tư vấn về điều gì mới không?',
-          timestamp: new Date(),
-        },
-      ]);
+      const newMsg: Message = {
+        id: Date.now().toString(),
+        role: Role.MODEL,
+        text: 'Chúng mình đã bắt đầu lại. Cậu cần tư vấn về điều gì mới không?',
+        timestamp: new Date(),
+      };
+      setMessages([newMsg]);
     }
   };
 
@@ -137,18 +148,9 @@ const App: React.FC = () => {
           {isLoading && (
             <div className="flex justify-start mb-6">
               <div className="flex items-center gap-2 text-slate-400 bg-white px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-100 shadow-sm">
-                <div
-                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0ms' }}
-                />
-                <div
-                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '150ms' }}
-                />
-                <div
-                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '300ms' }}
-                />
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           )}
