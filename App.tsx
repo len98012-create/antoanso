@@ -11,11 +11,6 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-
-  // Biến lưu touch
-  const touchStartY = useRef<number>(0);
-  const touchCurrentY = useRef<number>(0);
 
   // Load messages từ localStorage khi App load
   useEffect(() => {
@@ -37,31 +32,19 @@ const App: React.FC = () => {
   // Lưu messages vào localStorage mỗi khi thay đổi
   useEffect(() => {
     localStorage.setItem('chatMessages', JSON.stringify(messages));
-    scrollToBottomIfNeeded();
+    scrollToBottom();
   }, [messages]);
 
-  const scrollToBottomIfNeeded = () => {
-    const chatContainer = chatContainerRef.current;
-    if (!chatContainer) return;
-    const atBottom =
-      chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50; // margin
-    if (atBottom) {
+  // Scroll xuống cuối nhưng giữ khi user vuốt lên
+  const scrollToBottom = () => {
+    const container = messagesEndRef.current?.parentElement;
+    if (!container) return;
+
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+
+    if (isNearBottom) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  // Touch event handlers cho vuốt lên/xuống
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchCurrentY.current = e.touches[0].clientY;
-    const deltaY = touchStartY.current - touchCurrentY.current;
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollBy({ top: deltaY, behavior: 'auto' });
-    }
-    touchStartY.current = touchCurrentY.current;
   };
 
   const handleSendMessage = async (text: string = inputValue) => {
@@ -163,12 +146,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Chat Area */}
-      <main
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-      >
+      <main className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth">
         <div className="max-w-3xl mx-auto">
           {messages.map(msg => (
             <ChatMessage key={msg.id} message={msg} />
@@ -177,9 +155,18 @@ const App: React.FC = () => {
           {isLoading && (
             <div className="flex justify-start mb-6">
               <div className="flex items-center gap-2 text-slate-400 bg-white px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-100 shadow-sm">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div
+                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '0ms' }}
+                />
+                <div
+                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '150ms' }}
+                />
+                <div
+                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '300ms' }}
+                />
               </div>
             </div>
           )}
