@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, ShieldCheck, RefreshCw, Sun, Moon } from 'lucide-react';
+import { Send, ShieldCheck, RefreshCw, Moon, Sun } from 'lucide-react';
 import { Message, Role } from './types';
 import { sendMessageStream, resetChatSession } from './services/geminiService';
 import ChatMessage from './components/ChatMessage';
@@ -17,19 +17,12 @@ const App: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Bước 2: đồng bộ darkMode với html
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
-  // Scroll auto khi tin nhắn mới
+  // Auto scroll khi có tin nhắn mới
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -37,6 +30,15 @@ const App: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Đồng bộ darkMode với <html>
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   const handleSendMessage = async (text: string = inputValue) => {
     const trimmedText = text.trim();
@@ -84,7 +86,9 @@ const App: React.FC = () => {
       ]);
     } finally {
       setIsLoading(false);
-      inputRef.current?.focus();
+      if (window.matchMedia('(min-width: 768px)').matches) {
+        inputRef.current?.focus();
+      }
     }
   };
 
@@ -110,19 +114,21 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-500">
+    <div
+      className={`flex flex-col h-full transition-colors duration-500 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100`}
+    >
       {/* Header */}
       <header className="flex-none bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 shadow-sm z-10 transition-colors duration-500">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-800 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-300 transition-colors duration-500">
+            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-700 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-200">
               <ShieldCheck size={24} />
             </div>
             <div>
-              <h1 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight transition-colors duration-500">
+              <h1 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight">
                 Cố vấn An toàn Số
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-500">
+              <p className="text-xs text-slate-500 dark:text-slate-300">
                 Người bạn đồng hành tin cậy
               </p>
             </div>
@@ -137,7 +143,7 @@ const App: React.FC = () => {
             </button>
             <button
               onClick={handleReset}
-              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors duration-300"
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
               title="Bắt đầu cuộc trò chuyện mới"
             >
               <RefreshCw size={20} />
@@ -147,7 +153,10 @@ const App: React.FC = () => {
       </header>
 
       {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth">
+      <main
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth"
+      >
         <div className="max-w-3xl mx-auto">
           {messages.map(msg => (
             <ChatMessage key={msg.id} message={msg} />
@@ -155,10 +164,19 @@ const App: React.FC = () => {
 
           {isLoading && (
             <div className="flex justify-start mb-6">
-              <div className="flex items-center gap-2 text-slate-400 bg-white dark:bg-slate-800 px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-100 dark:border-slate-700 shadow-sm transition-colors duration-500">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="flex items-center gap-2 text-slate-400 bg-white dark:bg-slate-700 px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-100 dark:border-slate-600 shadow-sm">
+                <div
+                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '0ms' }}
+                />
+                <div
+                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '150ms' }}
+                />
+                <div
+                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
+                  style={{ animationDelay: '300ms' }}
+                />
               </div>
             </div>
           )}
@@ -188,7 +206,7 @@ const App: React.FC = () => {
               onKeyDown={handleKeyDown}
               placeholder="Nhập câu hỏi của cậu tại đây..."
               disabled={isLoading}
-              className="w-full pl-4 pr-4 py-3.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-300 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full pl-4 pr-4 py-3.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors duration-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-300 disabled:opacity-60 disabled:cursor-not-allowed"
             />
           </div>
           <button
@@ -205,7 +223,7 @@ const App: React.FC = () => {
           </button>
         </div>
         <div className="max-w-3xl mx-auto mt-2 text-center">
-          <p className="text-[10px] text-slate-400 dark:text-slate-300 transition-colors duration-500">
+          <p className="text-[10px] text-slate-400 dark:text-slate-300">
             * Cố vấn An toàn Số là AI và có thể mắc lỗi. Với các tình huống khẩn cấp, hãy liên hệ người lớn hoặc tổng đài 111.
           </p>
         </div>
