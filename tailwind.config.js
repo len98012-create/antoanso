@@ -1,13 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: 'class', // bật chế độ dark mode theo class
+  darkMode: 'class', // Đây là điểm quan trọng
   content: [
     './index.html',
-    './src/**/*.{js,ts,jsx,tsx}',
+    './src/**/*.{ts,tsx,js,jsx}',
   ],
   theme: {
     extend: {},
   },
   plugins: [],
-}
-
+};
