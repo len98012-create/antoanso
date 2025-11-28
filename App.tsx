@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, ShieldCheck, RefreshCw } from 'lucide-react';
 import { Message, Role } from './types';
@@ -20,13 +19,23 @@ const App: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // --- Cập nhật scroll: chỉ scroll nếu user gần cuối ---
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesEndRef.current?.parentElement;
+    if (!container) return;
+
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+
+    if (isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+  // --- Kết thúc cập nhật scroll ---
 
   const handleSendMessage = async (text: string = inputValue) => {
     const trimmedText = text.trim();
@@ -52,7 +61,6 @@ const App: React.FC = () => {
       let fullResponse = '';
       const stream = sendMessageStream(trimmedText);
 
-      // For-await-of safe with try/catch
       for await (const chunk of stream) {
         fullResponse += chunk;
         setMessages(prev =>
