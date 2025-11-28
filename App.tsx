@@ -5,7 +5,7 @@ import { sendMessageStream, resetChatSession } from './services/geminiService';
 import ChatMessage from './components/ChatMessage';
 import QuickPrompts from './components/QuickPrompts';
 
-const App: React.FC = () => {
+const App = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
@@ -20,8 +20,8 @@ const App: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // --- Scroll logic: vuốt tự do + auto scroll khi tin mới ---
-  const scrollToBottom = (force: boolean = false) => {
+  // --- Scroll logic: vuốt tự do + auto scroll ---
+  const scrollToBottom = (force = false) => {
     const container = messagesEndRef.current?.parentElement;
     if (!container) return;
 
@@ -37,16 +37,13 @@ const App: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // --- Toggle dark/light mode ---
+  // --- Dark/Light mode ---
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    if (darkMode) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
   }, [darkMode]);
 
-  const handleSendMessage = async (text: string = inputValue) => {
+  const handleSendMessage = async (text = inputValue) => {
     const trimmedText = text.trim();
     if (!trimmedText || isLoading) return;
 
@@ -59,29 +56,22 @@ const App: React.FC = () => {
     setMessages(prev => [...prev, userMsg]);
     setInputValue('');
     setIsLoading(true);
-
     scrollToBottom(true);
 
     try {
       const aiMsgId = (Date.now() + 1).toString();
-      setMessages(prev => [
-        ...prev,
-        { id: aiMsgId, role: Role.MODEL, text: '', timestamp: new Date() },
-      ]);
-
+      setMessages(prev => [...prev, { id: aiMsgId, role: Role.MODEL, text: '', timestamp: new Date() }]);
       let fullResponse = '';
       const stream = sendMessageStream(trimmedText);
 
       for await (const chunk of stream) {
         fullResponse += chunk;
         setMessages(prev =>
-          prev.map(msg =>
-            msg.id === aiMsgId ? { ...msg, text: fullResponse } : msg
-          )
+          prev.map(msg => (msg.id === aiMsgId ? { ...msg, text: fullResponse } : msg))
         );
       }
     } catch (error) {
-      console.error('Error streaming AI response:', error);
+      console.error(error);
       setMessages(prev => [
         ...prev,
         {
@@ -94,9 +84,7 @@ const App: React.FC = () => {
       ]);
     } finally {
       setIsLoading(false);
-      if (window.matchMedia('(min-width: 768px)').matches) {
-        inputRef.current?.focus();
-      }
+      if (window.matchMedia('(min-width: 768px)').matches) inputRef.current?.focus();
       scrollToBottom(true);
     }
   };
@@ -126,7 +114,7 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300">
       {/* Header */}
-      <header className="flex-none bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 shadow-sm z-10 transition-colors duration-300">
+      <header className="flex-none bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 shadow-sm transition-colors duration-300">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-700 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-200 transition-colors duration-300">
@@ -170,18 +158,9 @@ const App: React.FC = () => {
           {isLoading && (
             <div className="flex justify-start mb-6">
               <div className="flex items-center gap-2 text-slate-400 dark:text-slate-300 bg-white dark:bg-slate-700 px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-100 dark:border-slate-600 shadow-sm transition-colors duration-300">
-                <div
-                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0ms' }}
-                />
-                <div
-                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '150ms' }}
-                />
-                <div
-                  className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '300ms' }}
-                />
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           )}
@@ -191,13 +170,11 @@ const App: React.FC = () => {
       </main>
 
       {/* Quick Prompts */}
-      {!isLoading &&
-        messages.length < 4 &&
-        messages[messages.length - 1].role === Role.MODEL && (
-          <div className="flex-none bg-slate-50 dark:bg-slate-900 pt-2 transition-colors duration-300">
-            <QuickPrompts onSelect={handleSendMessage} disabled={isLoading} />
-          </div>
-        )}
+      {!isLoading && messages.length < 4 && messages[messages.length - 1].role === Role.MODEL && (
+        <div className="flex-none bg-slate-50 dark:bg-slate-900 pt-2 transition-colors duration-300">
+          <QuickPrompts onSelect={handleSendMessage} disabled={isLoading} />
+        </div>
+      )}
 
       {/* Input Area */}
       <footer className="flex-none bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-4 py-4 z-10 transition-colors duration-300">
